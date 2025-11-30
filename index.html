@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Presensi GPS & QR</title>
+    <title>E-Presensi GPS & QR (Cloud)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,14 +46,27 @@
             object-fit: cover;
             border-radius: 8px;
         }
+        
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
 
     <div class="glass-panel w-full max-w-md p-6 relative overflow-hidden min-h-[600px]">
         
+        <!-- Connection Status -->
+        <div class="absolute top-4 right-4 flex items-center gap-2">
+            <span id="db-status-text" class="text-[10px] text-gray-400">Menghubungkan...</span>
+            <span id="db-status-dot" class="status-dot bg-gray-400 animate-pulse"></span>
+        </div>
+
         <!-- Header -->
-        <div class="text-center mb-6 border-b pb-4">
+        <div class="text-center mb-6 border-b pb-4 mt-2">
             <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-fingerprint text-blue-600 mr-2"></i>E-Presensi</h1>
             <p class="text-sm text-gray-500">Scan QR & Validasi Lokasi</p>
         </div>
@@ -61,11 +74,11 @@
         <!-- VIEW: HOME (Role Selection) -->
         <div id="view-home" class="space-y-4">
             <div class="p-4 bg-blue-50 rounded-lg border border-blue-100 text-center text-xs text-blue-800">
-                <i class="fa-solid fa-circle-info mr-1"></i> 
-                Pastikan izinkan akses <b>Kamera</b> & <b>Lokasi</b>.
+                <i class="fa-solid fa-cloud mr-1"></i> 
+                Data lokasi tersimpan di <b>Cloud</b>. Admin cukup setting sekali, semua perangkat akan terupdate.
             </div>
 
-            <button onclick="switchView('scan')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-between group">
+            <button onclick="window.switchView('scan')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-between group">
                 <div class="flex items-center">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-4">
                         <i class="fa-solid fa-user-clock text-xl"></i>
@@ -78,7 +91,7 @@
                 <i class="fa-solid fa-chevron-right opacity-50 group-hover:translate-x-1 transition"></i>
             </button>
 
-            <button onclick="switchView('admin')" class="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-semibold py-4 px-6 rounded-xl shadow-sm transition transform active:scale-95 flex items-center justify-between group">
+            <button onclick="window.switchView('admin')" class="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-semibold py-4 px-6 rounded-xl shadow-sm transition transform active:scale-95 flex items-center justify-between group">
                 <div class="flex items-center">
                     <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-4">
                         <i class="fa-solid fa-shield-halved text-gray-600 text-xl"></i>
@@ -94,22 +107,22 @@
 
         <!-- VIEW: ADMIN (QR Generator & Config) -->
         <div id="view-admin" class="hidden space-y-4">
-            <button onclick="switchView('home')" class="text-gray-500 hover:text-blue-600 mb-2 flex items-center text-sm font-medium">
+            <button onclick="window.switchView('home')" class="text-gray-500 hover:text-blue-600 mb-2 flex items-center text-sm font-medium">
                 <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
             </button>
             
             <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h3 class="font-bold text-gray-700 mb-2 text-sm"><i class="fa-solid fa-map-pin text-red-500 mr-2"></i>Lokasi Kantor</h3>
+                <h3 class="font-bold text-gray-700 mb-2 text-sm"><i class="fa-solid fa-map-pin text-red-500 mr-2"></i>Lokasi Kantor (Cloud)</h3>
                 <div class="text-xs text-gray-600 mb-3 text-justify">
-                    <b>Cara Pakai:</b> Buka Google Maps, klik kanan lokasi kantor, salin angka koordinat (contoh: <code>-6.2088, 106.8456</code>), lalu paste di bawah ini.
+                    Masukkan koordinat dari Google Maps. Saat Anda klik Simpan, data ini akan menyebar ke semua HP Karyawan secara otomatis.
                 </div>
                 
                 <!-- INPUT KOORDINAT SATU KOLOM -->
                 <div class="mb-3">
                     <label class="text-xs font-bold text-gray-500 block mb-1">Koordinat Maps (Lat, Lon)</label>
                     <div class="flex">
-                        <input type="text" id="coord-input" class="w-full text-sm p-2 rounded-l border border-r-0 border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="-6.1753, 106.8271">
-                        <button onclick="pasteFromClipboard()" class="bg-gray-200 hover:bg-gray-300 text-gray-600 px-3 rounded-r border border-l-0 border-gray-300" title="Paste">
+                        <input type="text" id="coord-input" class="w-full text-sm p-2 rounded-l border border-r-0 border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Memuat data...">
+                        <button onclick="window.pasteFromClipboard()" class="bg-gray-200 hover:bg-gray-300 text-gray-600 px-3 rounded-r border border-l-0 border-gray-300" title="Paste">
                             <i class="fa-solid fa-paste"></i>
                         </button>
                     </div>
@@ -119,18 +132,17 @@
                 <div class="mb-3">
                     <div class="flex justify-between items-center mb-1">
                         <label class="text-xs font-bold text-gray-500">Radius Toleransi</label>
-                        <span id="radius-val" class="text-xs font-bold text-blue-600">100m</span>
+                        <span id="radius-val" class="text-xs font-bold text-blue-600">...</span>
                     </div>
                     <input type="range" id="office-radius" min="20" max="1000" step="10" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                    <p class="text-[10px] text-gray-400">Geser ke kanan jika sinyal GPS Karyawan sering lompat.</p>
                 </div>
 
                 <div class="flex gap-2">
-                    <button onclick="setOfficeLocationToCurrent()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 px-2 rounded transition">
-                        <i class="fa-solid fa-location-crosshairs"></i> Gunakan GPS Saat Ini
+                    <button onclick="window.setOfficeLocationToCurrent()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 px-2 rounded transition">
+                        <i class="fa-solid fa-location-crosshairs"></i> Gunakan GPS Ini
                     </button>
-                    <button onclick="saveConfigManual()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-2 rounded transition">
-                        <i class="fa-solid fa-save"></i> Simpan
+                    <button onclick="window.saveConfigManual()" id="btn-save" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-2 rounded transition">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Cloud
                     </button>
                 </div>
                  <div class="mt-2 text-center">
@@ -140,8 +152,8 @@
 
             <div class="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-dashed border-gray-300">
                 <div id="qrcode" class="mb-4"></div>
-                <p class="text-xs text-gray-400 text-center mb-4">Scan untuk Absen</p>
-                <button onclick="generateQR()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition">
+                <p class="text-xs text-gray-400 text-center mb-4">Token QR akan refresh tiap sesi</p>
+                <button onclick="window.generateQR()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition">
                     <i class="fa-solid fa-arrows-rotate mr-2"></i> Refresh QR
                 </button>
             </div>
@@ -149,7 +161,7 @@
 
         <!-- VIEW: SCAN (Employee) -->
         <div id="view-scan" class="hidden flex flex-col h-full">
-            <button onclick="stopScannerAndBack()" class="text-gray-500 hover:text-blue-600 mb-4 flex items-center text-sm font-medium">
+            <button onclick="window.stopScannerAndBack()" class="text-gray-500 hover:text-blue-600 mb-4 flex items-center text-sm font-medium">
                 <i class="fa-solid fa-arrow-left mr-2"></i> Batal
             </button>
 
@@ -161,14 +173,14 @@
                             <p class="text-xs text-gray-500">Status GPS</p>
                             <p id="gps-status" class="text-sm font-bold text-orange-500"><i class="fa-solid fa-spinner fa-spin"></i> Mencari...</p>
                         </div>
-                        <button onclick="startGpsTracking()" class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">
+                        <button onclick="window.startGpsTracking()" class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-100">
                             <i class="fa-solid fa-rotate"></i> Retry
                         </button>
                     </div>
                     <div class="flex justify-between items-center">
                         <div>
                             <p class="text-xs text-gray-500">Radius Diizinkan</p>
-                            <p id="allowed-radius" class="text-xs font-mono text-blue-600">Max 100m</p>
+                            <p id="allowed-radius" class="text-xs font-mono text-blue-600">Loading...</p>
                         </div>
                          <div class="text-right">
                             <p class="text-xs text-gray-500">Jarak ke Kantor</p>
@@ -188,7 +200,7 @@
                 <!-- Error & Mock Button Container -->
                 <div id="error-message-box" class="hidden mt-4 p-3 bg-red-100 text-red-700 text-xs rounded border border-red-200 w-full text-center flex flex-col gap-2">
                     <span id="error-text">Error message here</span>
-                    <button onclick="enableMockGPS()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded w-full">
+                    <button onclick="window.enableMockGPS()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded w-full animate-bounce">
                         <i class="fa-solid fa-flask mr-1"></i> Gunakan Lokasi Palsu (Testing)
                     </button>
                 </div>
@@ -197,124 +209,191 @@
 
     </div>
 
-    <script>
-        // --- KONFIGURASI DEFAULT ---
-        let officeConfig = {
-            lat: -6.175392, // Monas Default
+    <!-- MODULE SCRIPT: FIREBASE INTEGRATION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- FIREBASE INIT ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let currentUser = null;
+
+        // --- GLOBAL STATE ---
+        window.officeConfig = {
+            lat: -6.175392, 
             lon: 106.827153,
-            maxDistance: 100 // meter
+            maxDistance: 100
         };
-        
+
+        // --- AUTH & LISTENER ---
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed", error);
+                updateStatus(false, "Auth Error");
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                updateStatus(true, "Terhubung ke Cloud");
+                listenToConfig();
+            } else {
+                updateStatus(false, "Terputus");
+            }
+        });
+
+        // --- FIRESTORE LOGIC ---
+        function listenToConfig() {
+            // FIX: Menambahkan segmen 'main' agar path menjadi genap (6 segmen)
+            // Path: artifacts/{appId}/public/data/officeConfig/main
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'officeConfig', 'main');
+            
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    window.officeConfig.lat = data.lat;
+                    window.officeConfig.lon = data.lon;
+                    window.officeConfig.maxDistance = data.radius;
+
+                    console.log("Config Updated from Cloud:", window.officeConfig);
+                    
+                    updateAdminUIFromConfig();
+                    document.getElementById('allowed-radius').innerText = "Max " + window.officeConfig.maxDistance + "m";
+                } else {
+                    console.log("No config found, creating default...");
+                    saveToCloud(window.officeConfig.lat, window.officeConfig.lon, window.officeConfig.maxDistance);
+                }
+            }, (error) => {
+                console.error("Listen failed: ", error);
+                // Jangan tampilkan error ke UI status agar user tidak panik
+                // Cukup log ke console
+            });
+        }
+
+        async function saveToCloud(lat, lon, radius) {
+            if (!currentUser) {
+                Swal.fire('Error', 'Tidak terhubung ke server.', 'error');
+                return;
+            }
+
+            // FIX: Menggunakan path yang sama dengan listenToConfig (6 segmen)
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'officeConfig', 'main');
+            
+            try {
+                document.getElementById('btn-save').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+                await setDoc(docRef, {
+                    lat: parseFloat(lat),
+                    lon: parseFloat(lon),
+                    radius: parseInt(radius),
+                    updatedBy: currentUser.uid,
+                    updatedAt: new Date().toISOString()
+                });
+                
+                Swal.fire('Berhasil', 'Lokasi tersimpan di Cloud & tersinkron ke semua perangkat.', 'success');
+            } catch (e) {
+                console.error("Error saving: ", e);
+                Swal.fire('Gagal', 'Gagal menyimpan ke cloud: ' + e.message, 'error');
+            } finally {
+                document.getElementById('btn-save').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Cloud';
+            }
+        }
+
+        // --- EXPOSE TO WINDOW ---
+        window.saveConfigManual = function() {
+            const rawInput = document.getElementById('coord-input').value;
+            const radInput = parseInt(document.getElementById('office-radius').value);
+
+            const parts = rawInput.split(',');
+            if (parts.length !== 2) {
+                Swal.fire('Format Salah', 'Format: Latitude, Longitude (Contoh: -6.2, 106.8)', 'error');
+                return;
+            }
+            const lat = parseFloat(parts[0].trim());
+            const lon = parseFloat(parts[1].trim());
+
+            if(isNaN(lat) || isNaN(lon)) return Swal.fire('Error', 'Koordinat harus angka', 'error');
+
+            saveToCloud(lat, lon, radInput);
+            window.generateQR();
+        }
+
+        // UI Helpers
+        function updateStatus(isOnline, text) {
+            const dot = document.getElementById('db-status-dot');
+            const txt = document.getElementById('db-status-text');
+            txt.innerText = text;
+            if(isOnline) {
+                dot.className = "status-dot bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+                dot.classList.remove('animate-pulse');
+            } else {
+                dot.className = "status-dot bg-red-500";
+            }
+        }
+
+        function updateAdminUIFromConfig() {
+            const elInput = document.getElementById('coord-input');
+            const elRadius = document.getElementById('office-radius');
+            const elRadVal = document.getElementById('radius-val');
+
+            if(elInput && window.officeConfig.lat) {
+                elInput.value = `${window.officeConfig.lat}, ${window.officeConfig.lon}`;
+                elRadius.value = window.officeConfig.maxDistance;
+                elRadVal.innerText = window.officeConfig.maxDistance + "m";
+            }
+        }
+
+        // Start App
+        initApp();
+    </script>
+
+    <!-- CLASSIC SCRIPT: LOCAL LOGIC -->
+    <script>
+        // --- LOCAL UTILS & NAVIGATION ---
         let userLocation = { lat: null, lon: null, accuracy: null };
         let html5QrcodeScanner = null;
         let watchId = null;
         let isMockMode = false;
 
-        // --- NAVIGASI ---
-        function switchView(viewName) {
+        window.switchView = function(viewName) {
             ['home', 'admin', 'scan'].forEach(v => {
                 document.getElementById(`view-${v}`).classList.add('hidden');
             });
             document.getElementById(`view-${viewName}`).classList.remove('hidden');
 
             if (viewName === 'admin') {
-                initAdmin();
+                window.generateQR();
             } else if (viewName === 'scan') {
-                initScanner();
+                window.initScanner();
             }
         }
 
-        // --- UTILS ---
-        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-            var R = 6371; 
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            var d = R * c; 
-            return d * 1000;
-        }
-
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180);
-        }
-
-        // --- ADMIN LOGIC ---
-        function initAdmin() {
-            // Load Saved Data
-            const savedLat = localStorage.getItem('office_lat');
-            const savedLon = localStorage.getItem('office_lon');
-            const savedRad = localStorage.getItem('office_rad');
-            
-            if(savedLat && savedLon) {
-                officeConfig.lat = parseFloat(savedLat);
-                officeConfig.lon = parseFloat(savedLon);
-            }
-            if(savedRad) {
-                officeConfig.maxDistance = parseInt(savedRad);
-            }
-
-            // Populate Form (Format: Lat, Lon)
-            const combinedCoord = `${officeConfig.lat}, ${officeConfig.lon}`;
-            document.getElementById('coord-input').value = combinedCoord;
-            
-            document.getElementById('office-radius').value = officeConfig.maxDistance;
-            document.getElementById('radius-val').innerText = officeConfig.maxDistance + "m";
-
-            // Slider Listener
-            document.getElementById('office-radius').addEventListener('input', function(e) {
-                document.getElementById('radius-val').innerText = e.target.value + "m";
-            });
-
-            generateQR();
-        }
-
-        async function pasteFromClipboard() {
+        window.pasteFromClipboard = async function() {
             try {
                 const text = await navigator.clipboard.readText();
                 document.getElementById('coord-input').value = text;
             } catch (err) {
-                Swal.fire('Info', 'Izin clipboard ditolak. Silakan paste manual (Ctrl+V).', 'info');
+                Swal.fire('Info', 'Izin clipboard ditolak. Paste manual (Ctrl+V).', 'info');
             }
         }
 
-        function saveConfigManual() {
-            const rawInput = document.getElementById('coord-input').value;
-            const radInput = parseInt(document.getElementById('office-radius').value);
+        document.getElementById('office-radius').addEventListener('input', function(e) {
+            document.getElementById('radius-val').innerText = e.target.value + "m";
+        });
 
-            // Parsing "Lat, Lon"
-            // Menerima spasi atau tidak setelah koma
-            const parts = rawInput.split(',');
-            
-            if (parts.length !== 2) {
-                Swal.fire('Format Salah', 'Gunakan format: Latitude, Longitude (Contoh: -6.2, 106.8)', 'error');
-                return;
-            }
-
-            const lat = parseFloat(parts[0].trim());
-            const lon = parseFloat(parts[1].trim());
-
-            if(isNaN(lat) || isNaN(lon)) {
-                Swal.fire('Error', 'Koordinat harus berupa angka.', 'error');
-                return;
-            }
-
-            officeConfig.lat = lat;
-            officeConfig.lon = lon;
-            officeConfig.maxDistance = radInput;
-
-            localStorage.setItem('office_lat', lat);
-            localStorage.setItem('office_lon', lon);
-            localStorage.setItem('office_rad', radInput);
-
-            Swal.fire('Tersimpan', `Lokasi: ${lat}, ${lon} <br> Radius: ${radInput}m`, 'success');
-            generateQR();
-        }
-
-        function setOfficeLocationToCurrent() {
+        window.setOfficeLocationToCurrent = function() {
             if (navigator.geolocation) {
                 Swal.fire({
                     title: 'Mendeteksi...',
@@ -323,20 +402,15 @@
                 navigator.geolocation.getCurrentPosition((position) => {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    
-                    // Update Input Box
                     document.getElementById('coord-input').value = `${lat}, ${lon}`;
-                    
-                    // Auto Save
-                    saveConfigManual();
-                    
-                }, handleError);
+                    Swal.close();
+                }, window.handleError);
             } else {
                 Swal.fire('Error', 'Browser tidak support GPS.', 'error');
             }
         }
 
-        function generateQR() {
+        window.generateQR = function() {
             const qrContainer = document.getElementById("qrcode");
             qrContainer.innerHTML = "";
             const qrData = JSON.stringify({
@@ -351,15 +425,28 @@
             });
         }
 
-        // --- SCANNER & GPS ---
-        function initScanner() {
-            isMockMode = false;
-            const savedRad = localStorage.getItem('office_rad');
-            if(savedRad) officeConfig.maxDistance = parseInt(savedRad);
+        // --- SCANNER & GPS LOGIC ---
 
-            document.getElementById('allowed-radius').innerText = "Max " + officeConfig.maxDistance + "m";
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            var R = 6371; 
+            var dLat = deg2rad(lat2 - lat1);
+            var dLon = deg2rad(lon2 - lon1);
+            var a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c; 
+            return d * 1000;
+        }
+
+        function deg2rad(deg) { return deg * (Math.PI / 180); }
+
+        window.initScanner = function() {
+            isMockMode = false;
+            document.getElementById('allowed-radius').innerText = "Max " + window.officeConfig.maxDistance + "m";
             
-            startGpsTracking();
+            window.startGpsTracking();
             
             setTimeout(() => {
                 if(!html5QrcodeScanner) {
@@ -369,50 +456,42 @@
                 html5QrcodeScanner.start(
                     { facingMode: "environment" },
                     config,
-                    onScanSuccess,
-                    onScanFailure
-                ).catch(err => {
-                    console.log("Camera Error: " + err);
-                });
+                    window.onScanSuccess,
+                    window.onScanFailure
+                ).catch(err => { console.log("Cam Error: " + err); });
             }, 500);
         }
 
-        function startGpsTracking() {
+        window.startGpsTracking = function() {
             if (isMockMode) return; 
 
             const statusEl = document.getElementById('gps-status');
             const errorBox = document.getElementById('error-message-box');
-
             errorBox.classList.add('hidden');
             statusEl.innerHTML = '<span class="text-orange-500"><i class="fa-solid fa-spinner fa-spin"></i> Mencari...</span>';
 
             if (navigator.geolocation) {
                 if(watchId) navigator.geolocation.clearWatch(watchId);
-
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        updateLocationUI(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
+                        window.updateLocationUI(position.coords.latitude, position.coords.longitude, position.coords.accuracy);
                     }, 
-                    handleError, 
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 0, 
-                        timeout: 15000 
-                    }
+                    window.handleError, 
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
                 );
             } else {
                 statusEl.innerText = "Browser tdk support GPS";
             }
         }
 
-        function updateLocationUI(lat, lon, accuracy) {
+        window.updateLocationUI = function(lat, lon, accuracy) {
             userLocation.lat = lat;
             userLocation.lon = lon;
             userLocation.accuracy = accuracy;
             
             const distance = getDistanceFromLatLonInMeters(
                 userLocation.lat, userLocation.lon,
-                officeConfig.lat, officeConfig.lon
+                window.officeConfig.lat, window.officeConfig.lon
             );
 
             const statusEl = document.getElementById('gps-status');
@@ -426,20 +505,20 @@
             
             distEl.innerText = Math.round(distance) + " m";
             
-            if(distance > officeConfig.maxDistance) {
-                    distEl.className = "text-sm font-bold text-red-500";
+            if(distance > window.officeConfig.maxDistance) {
+                distEl.className = "text-sm font-bold text-red-500";
             } else {
-                    distEl.className = "text-sm font-bold text-green-600";
+                distEl.className = "text-sm font-bold text-green-600";
             }
         }
 
-        function enableMockGPS() {
+        window.enableMockGPS = function() {
             isMockMode = true;
             if(watchId) navigator.geolocation.clearWatch(watchId);
             document.getElementById('error-message-box').classList.add('hidden');
             
-            const fakeLat = officeConfig.lat + 0.00001;
-            const fakeLon = officeConfig.lon + 0.00001;
+            const fakeLat = window.officeConfig.lat + 0.00001;
+            const fakeLon = window.officeConfig.lon + 0.00001;
             
             Swal.fire({
                 title: 'Mode Testing',
@@ -449,89 +528,68 @@
                 showConfirmButton: false
             });
 
-            updateLocationUI(fakeLat, fakeLon, 5);
+            window.updateLocationUI(fakeLat, fakeLon, 5);
         }
 
-        function handleError(error) {
+        window.handleError = function(error) {
             const statusEl = document.getElementById('gps-status');
             const errorBox = document.getElementById('error-message-box');
             const errorText = document.getElementById('error-text');
             let msg = "";
 
             switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    msg = "IZIN GPS DITOLAK. Cek pengaturan browser HP Anda.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    msg = "SINYAL LEMAH. Coba keluar ruangan atau dekat jendela.";
-                    break;
-                case error.TIMEOUT:
-                    msg = "TIMEOUT. GPS HP lambat merespon. Coba tekan Retry.";
-                    break;
-                default:
-                    msg = "Error GPS tidak diketahui.";
+                case error.PERMISSION_DENIED: msg = "IZIN GPS DITOLAK."; break;
+                case error.POSITION_UNAVAILABLE: msg = "SINYAL LEMAH/UNAVAILABLE."; break;
+                case error.TIMEOUT: msg = "TIMEOUT GPS."; break;
+                default: msg = "Error GPS tidak diketahui.";
             }
 
             console.error("GPS Error:", msg);
             statusEl.innerHTML = '<span class="text-red-500 font-bold">Gagal</span>';
             errorText.innerText = msg;
+            
+            // Tampilkan tombol testing jika error
             errorBox.classList.remove('hidden');
         }
 
-        function stopScannerAndBack() {
+        window.stopScannerAndBack = function() {
             if (html5QrcodeScanner) {
                 html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(err => {});
             }
             if (watchId) navigator.geolocation.clearWatch(watchId);
-            switchView('home');
+            window.switchView('home');
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
+        window.onScanSuccess = function(decodedText, decodedResult) {
             html5QrcodeScanner.pause();
-
             try {
                 const data = JSON.parse(decodedText);
                 if (data.app !== "e-presensi-v1") throw new Error("QR Code Salah!");
-
-                if (!userLocation.lat) throw new Error("GPS HP belum terkunci. Tunggu sebentar...");
+                if (!userLocation.lat) throw new Error("Tunggu GPS terkunci...");
 
                 const distance = getDistanceFromLatLonInMeters(
                     userLocation.lat, userLocation.lon,
-                    officeConfig.lat, officeConfig.lon
+                    window.officeConfig.lat, window.officeConfig.lon
                 );
 
-                if (distance <= officeConfig.maxDistance) {
+                if (distance <= window.officeConfig.maxDistance) {
                     Swal.fire({
                         title: 'ABSEN BERHASIL!',
-                        html: `
-                            <div class="text-left text-sm mt-2">
-                                <p>Jarak: <b>${Math.round(distance)}m</b></p>
-                                <p>Radius Max: <b>${officeConfig.maxDistance}m</b></p>
-                                <p class="text-green-600 mt-2">Anda berada dalam area kantor.</p>
-                            </div>
-                        `,
+                        html: `<div class="text-sm mt-2">Jarak: <b>${Math.round(distance)}m</b><br>Max: ${window.officeConfig.maxDistance}m</div>`,
                         icon: 'success'
-                    }).then(() => stopScannerAndBack());
+                    }).then(() => window.stopScannerAndBack());
                 } else {
                     Swal.fire({
-                        title: 'DITOLAK: TERLALU JAUH',
-                        html: `
-                            <div class="text-left text-sm mt-2">
-                                <p>Jarak Anda: <b class="text-red-500">${Math.round(distance)}m</b></p>
-                                <p>Radius Max: <b>${officeConfig.maxDistance}m</b></p>
-                                <hr class="my-2">
-                                <p class="text-xs text-gray-500">Saran: Minta Admin memperbesar "Radius Toleransi" atau update lokasi kantor.</p>
-                            </div>
-                        `,
+                        title: 'TERLALU JAUH',
+                        html: `<div class="text-sm mt-2 text-red-500">Jarak: <b>${Math.round(distance)}m</b><br>Max: ${window.officeConfig.maxDistance}m</div>`,
                         icon: 'error'
                     }).then(() => html5QrcodeScanner.resume());
                 }
-
             } catch (err) {
                 Swal.fire('Error', err.message, 'error').then(() => html5QrcodeScanner.resume());
             }
         }
-        function onScanFailure(error) {}
+        window.onScanFailure = function(error) {}
     </script>
 </body>
 </html>
