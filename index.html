@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Presensi GPS & QR</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- QRCode.js (Generator) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Html5-QRCode (Scanner) -->
+    <script
+      src="https://unpkg.com/html5-qrcode"
+      type="text/javascript"
+    ></script>
+
+    <!-- SweetAlert2 (Alerts) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        min-height: 100vh;
+      }
+
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Scanner Styles */
+      #reader {
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      #reader video {
+        object-fit: cover;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body class="flex items-center justify-center p-4">
+    <div
+      class="glass-panel w-full max-w-md p-6 relative overflow-hidden min-h-[600px]"
+    >
+      <!-- Header -->
+      <div class="text-center mb-6 border-b pb-4">
+        <h1 class="text-2xl font-bold text-gray-800">
+          <i class="fa-solid fa-fingerprint text-blue-600 mr-2"></i>E-Presensi
+        </h1>
+        <p class="text-sm text-gray-500">Scan QR & Validasi Lokasi</p>
+      </div>
+
+      <!-- VIEW: HOME (Role Selection) -->
+      <div id="view-home" class="space-y-4">
+        <div
+          class="p-4 bg-blue-50 rounded-lg border border-blue-100 text-center text-xs text-blue-800"
+        >
+          <i class="fa-solid fa-circle-info mr-1"></i>
+          Pastikan izinkan akses <b>Kamera</b> & <b>Lokasi</b>.
+        </div>
+
+        <button
+          onclick="switchView('scan')"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-between group"
+        >
+          <div class="flex items-center">
+            <div
+              class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-4"
+            >
+              <i class="fa-solid fa-user-clock text-xl"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-sm opacity-80">Karyawan</div>
+              <div class="text-lg">Absen Masuk</div>
+            </div>
+          </div>
+          <i
+            class="fa-solid fa-chevron-right opacity-50 group-hover:translate-x-1 transition"
+          ></i>
+        </button>
+
+        <button
+          onclick="switchView('admin')"
+          class="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-semibold py-4 px-6 rounded-xl shadow-sm transition transform active:scale-95 flex items-center justify-between group"
+        >
+          <div class="flex items-center">
+            <div
+              class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-4"
+            >
+              <i class="fa-solid fa-shield-halved text-gray-600 text-xl"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-sm text-gray-500">Admin / HRD</div>
+              <div class="text-lg">Buat QR Code</div>
+            </div>
+          </div>
+          <i
+            class="fa-solid fa-chevron-right opacity-30 group-hover:translate-x-1 transition"
+          ></i>
+        </button>
+      </div>
+
+      <!-- VIEW: ADMIN (QR Generator & Config) -->
+      <div id="view-admin" class="hidden space-y-4">
+        <button
+          onclick="switchView('home')"
+          class="text-gray-500 hover:text-blue-600 mb-2 flex items-center text-sm font-medium"
+        >
+          <i class="fa-solid fa-arrow-left mr-2"></i> Kembali
+        </button>
+
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 class="font-bold text-gray-700 mb-2">
+            <i class="fa-solid fa-map-pin text-red-500 mr-2"></i>Lokasi Kantor
+          </h3>
+          <div class="text-xs text-gray-500 mb-2">
+            Default: Monas. Gunakan tombol di bawah untuk set lokasi.
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <div>
+              <label class="text-xs font-bold text-gray-500">Latitude</label>
+              <input
+                type="text"
+                id="office-lat"
+                class="w-full text-xs p-2 rounded border bg-white"
+                readonly
+              />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-500">Longitude</label>
+              <input
+                type="text"
+                id="office-lon"
+                class="w-full text-xs p-2 rounded border bg-white"
+                readonly
+              />
+            </div>
+          </div>
+          <button
+            onclick="setOfficeLocationToCurrent()"
+            class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold py-2 px-4 rounded transition"
+          >
+            <i class="fa-solid fa-location-crosshairs mr-1"></i> Set Lokasi Saya
+            sbg Kantor
+          </button>
+        </div>
+
+        <div
+          class="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-dashed border-gray-300"
+        >
+          <div id="qrcode" class="mb-4"></div>
+          <p class="text-sm text-gray-500 text-center mb-4">
+            Scan QR ini oleh karyawan.
+          </p>
+          <button
+            onclick="generateQR()"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full shadow-lg transition"
+          >
+            <i class="fa-solid fa-arrows-rotate mr-2"></i> Refresh QR Code
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW: SCAN (Employee) -->
+      <div id="view-scan" class="hidden flex flex-col h-full">
+        <button
+          onclick="stopScannerAndBack()"
+          class="text-gray-500 hover:text-blue-600 mb-4 flex items-center text-sm font-medium"
+        >
+          <i class="fa-solid fa-arrow-left mr-2"></i> Batal
+        </button>
+
+        <div class="flex-grow flex flex-col items-center">
+          <!-- Status Box -->
+          <div
+            class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 space-y-2"
+          >
+            <div
+              class="flex justify-between items-center border-b border-gray-200 pb-2"
+            >
+              <div>
+                <p class="text-xs text-gray-500">Status GPS</p>
+                <p id="gps-status" class="text-sm font-bold text-orange-500">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Mencari...
+                </p>
+              </div>
+              <button
+                onclick="startGpsTracking()"
+                class="text-xs bg-white border border-gray-300 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                <i class="fa-solid fa-rotate"></i> Retry
+              </button>
+            </div>
+            <div class="flex justify-between items-center">
+              <div>
+                <p class="text-xs text-gray-500">Akurasi GPS</p>
+                <p id="gps-accuracy" class="text-xs font-mono text-gray-700">
+                  - meter
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-gray-500">Jarak ke Kantor</p>
+                <p id="distance-info" class="text-sm font-bold text-gray-700">
+                  - m
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera Area -->
+          <div
+            class="relative w-full bg-black rounded-lg overflow-hidden shadow-xl"
+            style="min-height: 250px"
+          >
+            <div id="reader" class="w-full h-full"></div>
+            <div
+              class="absolute inset-0 border-2 border-blue-500/50 pointer-events-none flex items-center justify-center"
+            >
+              <div class="w-48 h-48 border-2 border-white/80 rounded-lg"></div>
+            </div>
+          </div>
+
+          <!-- Error & Mock Button Container -->
+          <div
+            id="error-message-box"
+            class="hidden mt-4 p-3 bg-red-100 text-red-700 text-xs rounded border border-red-200 w-full text-center flex flex-col gap-2"
+          >
+            <span id="error-text">Error message here</span>
+            <button
+              onclick="enableMockGPS()"
+              class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded w-full"
+            >
+              <i class="fa-solid fa-flask mr-1"></i> Gunakan Lokasi Palsu
+              (Testing)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- KONFIGURASI ---
+      let officeConfig = {
+        lat: -6.175392,
+        lon: 106.827153,
+        maxDistance: 100, // meter
+      };
+
+      let userLocation = { lat: null, lon: null, accuracy: null };
+      let html5QrcodeScanner = null;
+      let watchId = null;
+      let isMockMode = false; // Mode Simulasi
+
+      // --- NAVIGASI ---
+      function switchView(viewName) {
+        ["home", "admin", "scan"].forEach((v) => {
+          document.getElementById(`view-${v}`).classList.add("hidden");
+        });
+        document.getElementById(`view-${viewName}`).classList.remove("hidden");
+
+        if (viewName === "admin") {
+          initAdmin();
+        } else if (viewName === "scan") {
+          initScanner();
+        }
+      }
+
+      // --- UTILS ---
+      function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+        var R = 6371;
+        var dLat = deg2rad(lat2 - lat1);
+        var dLon = deg2rad(lon2 - lon1);
+        var a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(deg2rad(lat1)) *
+            Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c;
+        return d * 1000;
+      }
+
+      function deg2rad(deg) {
+        return deg * (Math.PI / 180);
+      }
+
+      // --- ADMIN ---
+      function initAdmin() {
+        const savedLat = localStorage.getItem("office_lat");
+        const savedLon = localStorage.getItem("office_lon");
+        if (savedLat && savedLon) {
+          officeConfig.lat = parseFloat(savedLat);
+          officeConfig.lon = parseFloat(savedLon);
+        }
+        document.getElementById("office-lat").value =
+          officeConfig.lat.toFixed(6);
+        document.getElementById("office-lon").value =
+          officeConfig.lon.toFixed(6);
+        generateQR();
+      }
+
+      function setOfficeLocationToCurrent() {
+        if (navigator.geolocation) {
+          Swal.fire({
+            title: "Mendeteksi Lokasi...",
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
+          navigator.geolocation.getCurrentPosition((position) => {
+            officeConfig.lat = position.coords.latitude;
+            officeConfig.lon = position.coords.longitude;
+            localStorage.setItem("office_lat", officeConfig.lat);
+            localStorage.setItem("office_lon", officeConfig.lon);
+            document.getElementById("office-lat").value =
+              officeConfig.lat.toFixed(6);
+            document.getElementById("office-lon").value =
+              officeConfig.lon.toFixed(6);
+            Swal.fire("Berhasil!", "Lokasi kantor tersimpan.", "success");
+          }, handleError);
+        } else {
+          Swal.fire("Error", "Browser tidak support GPS.", "error");
+        }
+      }
+
+      function generateQR() {
+        const qrContainer = document.getElementById("qrcode");
+        qrContainer.innerHTML = "";
+        const qrData = JSON.stringify({
+          app: "e-presensi-v1",
+          timestamp: Date.now(),
+          token: Math.random().toString(36).substring(7),
+        });
+        new QRCode(qrContainer, {
+          text: qrData,
+          width: 180,
+          height: 180,
+        });
+      }
+
+      // --- SCANNER & GPS ---
+      function initScanner() {
+        // Reset Mock Mode
+        isMockMode = false;
+        startGpsTracking();
+
+        setTimeout(() => {
+          if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+          }
+          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+          html5QrcodeScanner
+            .start(
+              { facingMode: "environment" },
+              config,
+              onScanSuccess,
+              onScanFailure
+            )
+            .catch((err) => {
+              console.log(
+                "Camera init error (likely expected in preview if blocked): " +
+                  err
+              );
+              // Jangan tampilkan error kamera di UI utama agar tidak menumpuk dengan error GPS
+              // Pengguna akan sadar jika layar hitam.
+            });
+        }, 500);
+      }
+
+      function startGpsTracking() {
+        if (isMockMode) return; // Jangan start GPS asli jika mode mock aktif
+
+        const statusEl = document.getElementById("gps-status");
+        const distEl = document.getElementById("distance-info");
+        const accEl = document.getElementById("gps-accuracy");
+        const errorBox = document.getElementById("error-message-box");
+
+        errorBox.classList.add("hidden");
+        statusEl.innerHTML =
+          '<span class="text-orange-500"><i class="fa-solid fa-spinner fa-spin"></i> Mencari...</span>';
+
+        if (navigator.geolocation) {
+          if (watchId) navigator.geolocation.clearWatch(watchId);
+
+          watchId = navigator.geolocation.watchPosition(
+            (position) => {
+              updateLocationUI(
+                position.coords.latitude,
+                position.coords.longitude,
+                position.coords.accuracy
+              );
+            },
+            handleError,
+            {
+              enableHighAccuracy: true,
+              maximumAge: 0,
+              timeout: 10000,
+            }
+          );
+        } else {
+          statusEl.innerText = "Browser tdk support GPS";
+        }
+      }
+
+      function updateLocationUI(lat, lon, accuracy) {
+        userLocation.lat = lat;
+        userLocation.lon = lon;
+        userLocation.accuracy = accuracy;
+
+        const distance = getDistanceFromLatLonInMeters(
+          userLocation.lat,
+          userLocation.lon,
+          officeConfig.lat,
+          officeConfig.lon
+        );
+
+        const statusEl = document.getElementById("gps-status");
+        const distEl = document.getElementById("distance-info");
+        const accEl = document.getElementById("gps-accuracy");
+
+        // Cek apakah ini mode mock
+        if (isMockMode) {
+          statusEl.innerHTML =
+            '<span class="text-purple-600 font-bold"><i class="fa-solid fa-robot"></i> Mode Testing</span>';
+        } else {
+          statusEl.innerHTML =
+            '<span class="text-green-600 font-bold">GPS Aktif</span>';
+        }
+
+        distEl.innerText = Math.round(distance) + " m";
+        accEl.innerText = "±" + Math.round(userLocation.accuracy) + " m";
+
+        if (distance > officeConfig.maxDistance) {
+          distEl.className = "text-sm font-bold text-red-500";
+        } else {
+          distEl.className = "text-sm font-bold text-green-600";
+        }
+      }
+
+      // --- MOCK GPS MODE (Solusi Error) ---
+      function enableMockGPS() {
+        isMockMode = true;
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+
+        // Sembunyikan error box
+        document.getElementById("error-message-box").classList.add("hidden");
+
+        // Set lokasi tepat di kantor (jarak 0-5 meter)
+        // Tambahkan sedikit variasi random agar terlihat 'hidup'
+        const fakeLat = officeConfig.lat + Math.random() * 0.00001;
+        const fakeLon = officeConfig.lon + Math.random() * 0.00001;
+
+        Swal.fire({
+          title: "Mode Testing Aktif",
+          text: "Lokasi Anda dimanipulasi agar dekat dengan kantor. Sekarang coba scan QR.",
+          icon: "info",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+
+        updateLocationUI(fakeLat, fakeLon, 5);
+      }
+
+      function handleError(error) {
+        const statusEl = document.getElementById("gps-status");
+        const errorBox = document.getElementById("error-message-box");
+        const errorText = document.getElementById("error-text");
+        let msg = "";
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            msg =
+              "IZIN DITOLAK: Browser memblokir lokasi. Silakan gunakan Mode Testing di bawah ini.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            msg = "LOKASI TIDAK TERSEDIA: Pastikan GPS HP aktif.";
+            break;
+          case error.TIMEOUT:
+            msg = "TIMEOUT: Gagal mengunci GPS. Sinyal lemah.";
+            break;
+          default:
+            msg = "Error GPS tidak diketahui.";
+        }
+
+        console.error("GPS Error:", msg);
+        statusEl.innerHTML =
+          '<span class="text-red-500 font-bold">GPS Error</span>';
+        errorText.innerText = msg;
+        errorBox.classList.remove("hidden");
+      }
+
+      function stopScannerAndBack() {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner
+            .stop()
+            .then(() => html5QrcodeScanner.clear())
+            .catch((err) => {});
+        }
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        switchView("home");
+      }
+
+      function onScanSuccess(decodedText, decodedResult) {
+        html5QrcodeScanner.pause();
+
+        try {
+          const data = JSON.parse(decodedText);
+          if (data.app !== "e-presensi-v1") throw new Error("QR Code Salah!");
+
+          if (!userLocation.lat)
+            throw new Error("Tunggu! Lokasi belum terkunci.");
+
+          // Skip validasi akurasi jika Mock Mode
+          if (!isMockMode && userLocation.accuracy > 100) {
+            throw new Error(
+              `Akurasi GPS buruk (${Math.round(
+                userLocation.accuracy
+              )}m). Pindah ke tempat terbuka.`
+            );
+          }
+
+          const distance = getDistanceFromLatLonInMeters(
+            userLocation.lat,
+            userLocation.lon,
+            officeConfig.lat,
+            officeConfig.lon
+          );
+
+          if (distance <= officeConfig.maxDistance) {
+            Swal.fire({
+              title: "Absen Berhasil!",
+              html: `Jarak: ${Math.round(distance)}m <br> Status: ${
+                isMockMode ? "(Mode Testing)" : "Tepat Waktu"
+              }`,
+              icon: "success",
+            }).then(() => stopScannerAndBack());
+          } else {
+            Swal.fire({
+              title: "Kejauhan!",
+              text: `Jarak: ${Math.round(distance)}m (Max: ${
+                officeConfig.maxDistance
+              }m)`,
+              icon: "error",
+            }).then(() => html5QrcodeScanner.resume());
+          }
+        } catch (err) {
+          Swal.fire("Error", err.message, "error").then(() =>
+            html5QrcodeScanner.resume()
+          );
+        }
+      }
+      function onScanFailure(error) {}
+    </script>
+  </body>
+</html>
